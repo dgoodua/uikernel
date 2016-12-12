@@ -40,7 +40,8 @@ function jsBundle() {
           path: 'node_modules/react-dom/dist/react-dom.min.js',
           exports: 'ReactDOM'
         }
-      }
+      },
+      debug: true
     }))
     .pipe(rename(packageInfo.name + '.js'))
     .pipe(gulp.dest('dist'))
