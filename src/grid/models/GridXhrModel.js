@@ -102,10 +102,8 @@ GridXhrModel.prototype.read = callbackify(async function (settings) {
     uri: url.format(parsedUrl)
   });
 
-  let body;
-
   // Parse response
-  body = JSON.parse(response);
+  let body = JSON.parse(response);
 
   return body;
 });

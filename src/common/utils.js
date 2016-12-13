@@ -91,42 +91,95 @@ exports.indexOf = (arr, item) =>{
 };
 
 exports.throttle = function (func) {
+  return function () {
+    if (typeof arguments[arguments.length-1] === 'function'){
+      return throttleCallback(func).apply(this, arguments);
+    } else {
+      return throttlePromise(func).apply(this, arguments);
+    }
+  };
 
-  let worked = false;
-  let nextArguments;
-  let nextResolve;
 
-  return function run(...args) {
-    return new Promise((resolve, reject) => {
-      if (worked) {
-        nextArguments = args;
-        if (nextResolve) {
-          nextResolve(Promise.reject(new ThrottleError('function call is deprecated')))
+  function throttleCallback(func) {
+    var worked = false;
+    var nextArguments;
+
+    return function run() {
+      var ctx = this; // Function context
+      var cb = arguments[arguments.length - 1];
+      var argumentsArray = [].slice.call(arguments);
+
+      function nextWorker() {
+        worked = false;
+        if (nextArguments) {
+          var args = nextArguments;
+          nextArguments = null;
+          run.apply(ctx, args);
+          return true;
         }
-        nextResolve = resolve;
+        return false;
+      }
+
+      if (worked) {
+        // Set as the next call
+        nextArguments = arguments;
         return;
       }
 
       worked = true;
 
-      let result = func.apply(this, args);
-      result
-        .then(result => {
-          worked = false;
-          if (nextArguments) {
-            nextResolve(run(...nextArguments));
-            nextArguments = null;
-            reject(new ThrottleError('function call is deprecated'));
-            return;
+      var cbWrapper = function () {
+        if (!nextWorker() && typeof cb === 'function') {
+          cb.apply(null, arguments);
+        }
+      };
+
+      if (typeof cb === 'function') {
+        argumentsArray[argumentsArray.length - 1] = cbWrapper;
+        func.apply(this, argumentsArray.concat(nextWorker));
+      } else {
+        func.apply(this, argumentsArray.concat(cbWrapper, nextWorker));
+      }
+    };
+  }
+
+  function throttlePromise(func) {
+    let worked = false;
+    let nextArguments;
+    let nextResolve;
+
+    return function run(...args) {
+      return new Promise((resolve, reject) => {
+        if (worked) {
+          nextArguments = args;
+          if (nextResolve) {
+            nextResolve(Promise.reject(new ThrottleError('function call is deprecated')))
           }
-          resolve(result);
-        })
-        .catch(err => {
-          worked = false;
-          reject(err);
-        });
-    });
-  };
+          nextResolve = resolve;
+          return;
+        }
+
+        worked = true;
+
+        let result = func.apply(this, args);
+        result
+          .then(result => {
+            worked = false;
+            if (nextArguments) {
+              nextResolve(run(...nextArguments));
+              nextArguments = null;
+              reject(new ThrottleError('function call is deprecated'));
+              return;
+            }
+            resolve(result);
+          })
+          .catch(err => {
+            worked = false;
+            reject(err);
+          });
+      });
+    };
+  }
 };
 
 exports.parseValueFromEvent = event =>{

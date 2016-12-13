@@ -60,6 +60,6 @@
   },
   "jest": {
     "verbose": true,
-    "modulePathIgnorePatterns": ["form"]
+    "modulePathIgnorePatterns": []
   }
 }

@@ -1,3 +1,13 @@
+/**
+ * Copyright (с) 2015, SoftIndex LLC.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @providesModule UIKernel
+ */
+
 let ValidationErrors = require('../../common/validation/ValidationErrors');
 let data = {
   name: '',
@@ -6,7 +16,6 @@ let data = {
   age: '',
   gender: 1
 };
-let validErr;
 module.exports = {
   getData: function () {
     return data;
@@ -34,8 +43,8 @@ module.exports = {
   getValidationDependency: function () {
     return [];
   },
-  on: jest.fn(),
-  off: jest.fn(),
+  on: jest.fn(),// eslint-disable-line
+  off: jest.fn(),// eslint-disable-line
   listenerCount: function () {
     let count = this.on.mock.calls.length - this.off.mock.calls.length;
     return count > 0 ? count : 0;

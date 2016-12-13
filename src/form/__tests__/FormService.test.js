@@ -1,6 +1,16 @@
+/**
+ * Copyright (с) 2015, SoftIndex LLC.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree.
+ *
+ * @providesModule UIKernel
+ */
+
 const Form = require('../FormService');
-const FormModel = require('../FormModel');
 const ValidationErrors = require('../../common/validation/ValidationErrors');
+/* eslint-disable */
 jest.mock('model');
 // const model = require('model');
 let initSettings = {
