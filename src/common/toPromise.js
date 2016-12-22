@@ -9,7 +9,7 @@
  */
 
 const functionsNames = [];
-module.exports = (func, onlyPromise) => {
+module.exports = (func, strictMode) => {
   const funcName = func.name;
   return function (...mainArguments) {
     let promise;
@@ -26,10 +26,11 @@ module.exports = (func, onlyPromise) => {
         return promise;
       }
 
-      if (onlyPromise) {
+      if (strictMode) {
         return callbackPromise;
       }
 
+      console.warn('toPromise function return not Promise');
       return Promise.resolve(promise);
     } else {
       if (functionsNames.indexOf(funcName) === -1) {

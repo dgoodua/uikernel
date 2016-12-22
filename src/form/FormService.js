@@ -26,6 +26,8 @@ class FormService {
     this._onModelChange = this._onModelChange.bind(this);
     this.validateForm = this.validateForm.bind(this);
     this.clearChanges = this.clearChanges.bind(this);
+    this.updateField = this.updateField.bind(this);
+    this.clearError = this.clearError.bind(this);
   }
 
   /**
@@ -37,7 +39,7 @@ class FormService {
    * @param {Object}            [settings.data]                         Preset data
    * @param {Object}            [settings.changes                       Preset changes
    * @param {bool}              [settings.submitAll=false]              Send all form for validity check
-   * @param {bool}              [settings._partialErrorChecking=false]   Activate partial gradual form validation
+   * @param {bool}              [settings.partialErrorChecking=false]   Activate partial gradual form validation
    * @param {bool}              [settings.showDependentFields=false]    Mark the fields which are involved in the group validation
    */
   async init(settings) {
@@ -48,8 +50,8 @@ class FormService {
     this._data = settings.data || null;
     this._changes = settings.changes || {};
     this.showDependentFields = settings.showDependentFields || false;
-    this._partialErrorChecking = settings._partialErrorChecking; // Current mode
-    this._partialErrorCheckingDefault = settings._partialErrorChecking; // Default mode
+    this._partialErrorChecking = settings.partialErrorChecking; // Current mode
+    this._partialErrorCheckingDefault = settings.partialErrorChecking; // Default mode
     this.model = settings.model; // FormModel
     this.fields = settings.fields;
     this.submitAll = settings.submitAll;
@@ -292,8 +294,8 @@ class FormService {
 
   getPartialErrorChecking() {
     return {
-      _partialErrorChecking: this._partialErrorChecking,
-      _partialErrorCheckingDefault: this._partialErrorCheckingDefault
+      partialErrorChecking: this._partialErrorChecking,
+      partialErrorCheckingDefault: this._partialErrorCheckingDefault
     };
   }
 
