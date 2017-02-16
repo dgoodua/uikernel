@@ -1,18 +1,14 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
-'use strict';
+import utils from '../../utils';
 
-var utils = require('../../utils');
-
-function validator(notNull, regExp, error, value) {
+function baseValidator(notNull, regExp, error, value) {
   error = error || 'Not valid';
   if (!utils.isDefined(value) || value === '') {
     if (notNull) {
@@ -21,7 +17,7 @@ function validator(notNull, regExp, error, value) {
     return;
   }
 
-  var type = typeof value;
+  const type = typeof value;
   if ((type !== 'string' && type !== 'number') || !regExp.test(value)) {
     return error;
   }
@@ -34,10 +30,7 @@ function validator(notNull, regExp, error, value) {
  * @param {string} error Error message
  * @returns {Function}
  */
-module.exports = function (regExp, error) {
-  return validator.bind(null, false, regExp, error);
-};
+const validator = (regExp, error) => baseValidator.bind(null, false, regExp, error);
+validator.notNull = (regExp, error) => baseValidator.bind(null, true, regExp, error);
 
-module.exports.notNull = function (regExp, error) {
-  return validator.bind(null, true, regExp, error);
-};
+export default validator;

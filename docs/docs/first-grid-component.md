@@ -25,6 +25,14 @@ var model = new UIKernel.Models.Grid.Collection({
 
 Here, we use [UIKernel.Models.Grid.Collection](/docs/grid-model-collection.html) and pass it a settings object as an argument.
 
+>If you want a grid to use [server](/docs/server-side.html) data, apply [UIKernel.Models.Grid.Xhr](/docs/grid-model-xhr.html):
+>
+>{% highlight javascript %}
+var model = new UIKernel.Models.Grid.Xhr({
+    api: 'https://example.com/api/users', // Your Grid API
+});
+{% endhighlight %}
+
 Next, we'll configure columns.
 
 `columns.js`:

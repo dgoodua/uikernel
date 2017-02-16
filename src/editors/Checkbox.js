@@ -1,33 +1,29 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
-'use strict';
+import {findDOMNode} from 'react-dom';
+import React from 'react';
 
-var React = require('react');
-var findDOMNode = require('react-dom').findDOMNode;
-
-var Checkbox = React.createClass({
-  propTypes: {
+class Checkbox extends React.Component {
+  static propTypes = {
     indeterminate: React.PropTypes.bool
-  },
+  };
 
-  componentDidMount: function () {
+  componentDidMount() {
     this._setIndeterminate(this.props.indeterminate);
-  },
-  componentWillReceiveProps: function (props) {
+  }
+  componentWillReceiveProps(props) {
     this._setIndeterminate(props.indeterminate);
-  },
-  _setIndeterminate: function (value) {
+  }
+  _setIndeterminate(value) {
     findDOMNode(this.refs.checkbox).indeterminate = value;
-  },
-  render: function () {
+  }
+  render() {
     return (
       <input
         {...this.props}
@@ -36,6 +32,6 @@ var Checkbox = React.createClass({
       />
     );
   }
-});
+}
 
-module.exports = Checkbox;
+export default Checkbox;

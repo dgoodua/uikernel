@@ -1,11 +1,9 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
 var model = (function () {
@@ -69,11 +67,11 @@ var model = (function () {
     }
   });
 
-  model.delete = function (id) {
+  model.delete = function (id, cb) {
     this.data = _.reject(this.data, function (record) {
       return record[0] === id;
     });
-    return id;
+    cb(null, id);
   };
 
   return model;

@@ -1,11 +1,9 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
 var columns = {
@@ -17,7 +15,7 @@ var columns = {
     onClickRefs: {
       edit: (function (e, recordId, record, grid) {
         var editPopup = popup.open(Form, {
-          model: UIKernel.Adapters.Grid.toFormUpdate(grid.getModel(), recordId),
+          model: new UIKernel.Adapters.Grid.ToFormUpdate(grid.getModel(), recordId),
           changes: grid.getRecordChanges(recordId),
           onSubmit: function onSubmit() {
             editPopup.close();

@@ -1,21 +1,17 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
-'use strict';
+import utils from '../common/utils';
+import {findDOMNode} from 'react-dom';
+import React from 'react';
 
-var React = require('react');
-var findDOMNode = require('react-dom').findDOMNode;
-var utils = require('../common/utils');
-
-var DatePickerEditor = React.createClass({
-  propTypes: {
+class DatePickerEditor extends React.Component {
+  static propTypes = {
     format: React.PropTypes.string,
     textFormat: React.PropTypes.string,
     min: React.PropTypes.any,
@@ -24,21 +20,23 @@ var DatePickerEditor = React.createClass({
     show: React.PropTypes.bool,
     onBlur: React.PropTypes.func,
     onChange: React.PropTypes.func.isRequired
-  },
+  };
 
-  getDefaultProps: function () {
-    return {
-      textFormat: 'yyyy-mm-dd'
+  static defaultProps ={
+    textFormat: 'yyyy-mm-dd'
+  };
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      format: props.format ? this.getFormat(props.format) : null,
+      textFormat: this.getFormat(props.textFormat)
     };
-  },
-  getInitialState: function () {
-    return {
-      format: this.props.format ? this.getFormat(this.props.format) : null,
-      textFormat: this.getFormat(this.props.textFormat)
-    };
-  },
-  componentDidMount: function () {
-    var $element = $(findDOMNode(this.refs.input))
+    this.setDate = this::this.setDate;
+  }
+
+  componentDidMount() {
+    const $element = $(findDOMNode(this.refs.input))
       .datepicker({
         minDate: this.props.min ? utils.toDate(this.props.min) : null,
         maxDate: this.props.max ? utils.toDate(this.props.max) : null,
@@ -48,7 +46,8 @@ var DatePickerEditor = React.createClass({
       });
 
     // Remove jQueryUI DatePicker key commands
-    $.datepicker._doKeyDown = function () { };
+    $.datepicker._doKeyDown = () => {
+    };
 
     if (this.props.value) {
       $element.val($.datepicker.formatDate(this.state.textFormat, utils.toDate(this.props.value)));
@@ -57,9 +56,10 @@ var DatePickerEditor = React.createClass({
     if (this.props.show) {
       $element.datepicker('show');
     }
-  },
-  componentWillReceiveProps: function (props) {
-    var $datePicker = $(findDOMNode(this.refs.input));
+  }
+
+  componentWillReceiveProps(props) {
+    const $datePicker = $(findDOMNode(this.refs.input));
     if (props.min !== this.props.min) {
       $datePicker.datepicker('option', 'minDate', props.min ? utils.toDate(props.min) : null);
     }
@@ -71,21 +71,21 @@ var DatePickerEditor = React.createClass({
       $datePicker.datepicker('option', 'dateFormat', this.getFormat(props.textFormat));
     }
     if (props.value !== this.props.value) {
-      var text = '';
+      let text = '';
       if (props.value) {
         text = $.datepicker.formatDate(this.state.textFormat, utils.toDate(props.value));
       }
       findDOMNode(this.refs.input).value = text;
     }
-  },
+  }
 
   /**
    * Save date changes
    */
-  setDate: function () {
-    var inputElement = findDOMNode(this.refs.input);
-    var value = inputElement.value;
-    var date;
+  setDate() {
+    const inputElement = findDOMNode(this.refs.input);
+    const value = inputElement.value;
+    let date;
 
     // Try to parse input text
     try {
@@ -109,11 +109,11 @@ var DatePickerEditor = React.createClass({
     } else {
       this.props.onChange(date);
     }
-  },
+  }
 
-  focus: function () {
+  focus() {
     findDOMNode(this.refs.input).focus();
-  },
+  }
 
   /**
    * Change usual date format to jQuery UI one
@@ -121,11 +121,11 @@ var DatePickerEditor = React.createClass({
    * @param   {string}    format      DateFormat
    * @returns {string}    jQuery  UI DateFormat
    */
-  getFormat: function (format) {
+  getFormat(format) {
     return format.replace('yyyy', 'yy');
-  },
+  }
 
-  render: function () {
+  render() {
     return (
       <input
         {...utils.omit(this.props, ['value', 'onBlur'])}
@@ -135,6 +135,6 @@ var DatePickerEditor = React.createClass({
       />
     );
   }
-});
+}
 
-module.exports = DatePickerEditor;
+export default DatePickerEditor;

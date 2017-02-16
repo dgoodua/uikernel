@@ -1,40 +1,21 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
-'use strict';
+import React from 'react';
 
-var React = require('react');
-
-var GridPaginationMixin = {
-  getDefaultProps: function () {
-    return {
-      page: 0,
-      defaultViewCount: 0
-    };
-  },
-
-  getInitialState: function () {
-    return {
-      page: this.props.page,
-      viewCount: this.props.defaultViewCount,
-      count: 0
-    };
-  },
-
+const GridPaginationMixin = {
   /**
    * Change event handler of displayed rows count in a table
    *
    * @param {Event} event
    */
   handleChangeViewCount: function (event) {
-    var count = this.props.viewVariants[event.target.value];
+    const count = this.props.viewVariants[event.target.value];
     if (this._isViewCountPropsMode()) {
       this.props.onChangeViewCount(count);
       return;
@@ -135,7 +116,7 @@ var GridPaginationMixin = {
    * @return {number}
    */
   getPagesCount: function () {
-    var viewCount = this.getViewCount();
+    const viewCount = this.getViewCount();
     return viewCount ? Math.ceil(this.state.count / viewCount) : 1;
   },
 
@@ -150,7 +131,7 @@ var GridPaginationMixin = {
     this.state.page = this._checkPage(page, this.state.viewCount, this.state.count);
   },
 
-  _checkPage: function (page, view, count) {
+  _checkPage: (page, view, count) => {
     if (page * view >= count) {
       page = view ? Math.ceil(count / view) - 1 : 0;
     }
@@ -162,7 +143,7 @@ var GridPaginationMixin = {
   },
 
   _renderPagination: function _renderPagination() {
-    var viewCount = this.getViewCount();
+    const viewCount = this.getViewCount();
     return viewCount ? (
       <div className="dgrid-footer">
         {this.props.viewVariants ? [
@@ -172,9 +153,7 @@ var GridPaginationMixin = {
               value={this.props.viewVariants.indexOf(viewCount)}
               onChange={this.handleChangeViewCount}
             >
-                {this.props.viewVariants.map(function (option, key) {
-                  return <option key={key} value={key}>{option}</option>;
-                }, this)}
+              {this.props.viewVariants.map((option, key) => <option key={key} value={key}>{option}</option>, this)}
             </select>
           </div>
         ] : null}
@@ -200,4 +179,4 @@ var GridPaginationMixin = {
   }
 };
 
-module.exports = GridPaginationMixin;
+export default GridPaginationMixin;

@@ -1,16 +1,13 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
-'use strict';
-
-var express = require('express');
+import toPromise from '../common/toPromise';
+import express from 'express';
 
 /**
  * Form Express API for List model interaction
@@ -23,17 +20,17 @@ function ListExpressApi() {
     return new ListExpressApi();
   }
 
-  var builderContext = this;
+  const builderContext = this;
 
   builderContext.middlewares = {
-    read: [function (req, res, next) {
-      builderContext._read(req.query.v, req, builderContext._getModel(req, res), function (err, response) {
+    read: [(req, res, next) => {
+      builderContext._read(req.query.v, req, builderContext._getModel(req, res), (err, response) => {
         builderContext._result(err, response, req, res, next);
       });
     }],
-    getLabel: [function (req, res, next) {
-      var id = JSON.parse(req.params.id);
-      builderContext._getLabel(id, req, builderContext._getModel(req, res), function (err, response) {
+    getLabel: [(req, res, next) => {
+      const id = JSON.parse(req.params.id);
+      builderContext._getLabel(id, req, builderContext._getModel(req, res), (err, response) => {
         builderContext._result(err, response, req, res, next);
       });
     }]
@@ -50,9 +47,7 @@ ListExpressApi.prototype.model = function (model) {
   if (typeof model === 'function') {
     this._getModel = model;
   } else {
-    this._getModel = function () {
-      return model;
-    };
+    this._getModel = () => model;
   }
   return this;
 };
@@ -78,7 +73,7 @@ ListExpressApi.prototype.result = function (func) {
   return this;
 };
 ListExpressApi.prototype.getRouter = function () {
-  var builderContext = this;
+  const builderContext = this;
 
   return new express.Router()
     .get('/', builderContext.middlewares.read)
@@ -86,16 +81,28 @@ ListExpressApi.prototype.getRouter = function () {
 };
 
 // Default implementation
-ListExpressApi.prototype._getModel = function () {
+ListExpressApi.prototype._getModel = () => {
   throw Error('Model is not defined.');
 };
-ListExpressApi.prototype._read = function (search, req, model, cb) {
-  model.read(search, cb);
+ListExpressApi.prototype._read = (search, req, model, cb) => {
+  toPromise(model.read.bind(model))(search)
+    .then(data => {
+      cb(null, data);
+    })
+    .catch(err => {
+      cb(err);
+    });
 };
-ListExpressApi.prototype._getLabel = function (id, req, model, cb) {
-  model.getLabel(id, cb);
+ListExpressApi.prototype._getLabel = (id, req, model, cb) => {
+  toPromise(model.getLabel.bind(model))(id)
+    .then(data => {
+      cb(null, data);
+    })
+    .catch(err => {
+      cb(err);
+    });
 };
-ListExpressApi.prototype._result = function (err, data, req, res, next) {
+ListExpressApi.prototype._result = (err, data, req, res, next) => {
   if (err) {
     next(err);
   } else {
@@ -106,4 +113,4 @@ ListExpressApi.prototype._result = function (err, data, req, res, next) {
   }
 };
 
-module.exports = ListExpressApi;
+export default ListExpressApi;

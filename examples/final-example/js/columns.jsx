@@ -1,11 +1,9 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
 var columns = {
@@ -21,7 +19,7 @@ var columns = {
     onClickRefs: {
       create: function(event, recordId, record, grid) { // ref="create" click handler
         var createPopup = Popup.open(RecordForm, {
-          model: UIKernel.Adapters.Grid.toFormCreate(grid.getModel(), {
+          model: new UIKernel.Adapters.Grid.ToFormCreate(grid.getModel(), {
             name: '',
             surname: '',
             phone: '',
@@ -37,7 +35,7 @@ var columns = {
       },
       edit: function(event, recordId, record, grid) { // ref="edit" click handler
         var editPopup = Popup.open(RecordForm, {
-          model: UIKernel.Adapters.Grid.toFormUpdate(grid.getModel(), recordId),
+          model: new UIKernel.Adapters.Grid.ToFormUpdate(grid.getModel(), recordId),
           mode: 'edit',
           changes: grid.getRecordChanges(recordId),
           onSubmit() {
@@ -47,8 +45,11 @@ var columns = {
         });
       },
       remove: function (event, recordId, record, grid) { // ref="remove" click handler
-        grid.getModel().delete(recordId);
-        grid.updateTable();
+        grid.getModel().delete(recordId, function (err) {
+          if (!err) {
+            grid.updateTable();
+          }
+        });
       }
     }
   },

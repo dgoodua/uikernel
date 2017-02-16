@@ -1,27 +1,30 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
-'use strict';
-
-var utils = require('../common/utils');
-var ValidationErrors = require('../common/validation/ValidationErrors');
+import utils from '../common/utils';
+import callbackify from '../common/callbackify';
+import toPromise from '../common/toPromise';
+import Validator from '../common/validation/Validator/common';
+import ValidationErrors from '../common/validation/ValidationErrors';
 
 /**
  * Grid form mixin
  * @mixin
  */
-var FormMixin = {
+const FormMixin = {
   getInitialState: function () {
     this._validateForm = utils.throttle(this._validateForm);
+
     if (this._handleModelChange.name.indexOf('bound ') !== 0) { // Support React.createClass and mixin-decorators
       this._handleModelChange = this._handleModelChange.bind(this);
+      this._getData = this._getData.bind(this);
+      this._getChanges = this._getChanges.bind(this);
+      this.validateForm = this.validateForm.bind(this);
     }
 
     return {
@@ -53,47 +56,38 @@ var FormMixin = {
    * @param {bool}              [settings.showDependentFields=false]    Mark the fields which are involved in the group validation
    * @param {bool}              [settings.autoSubmit]                   Automatic submit before updateField
    * @param {Function}          [settings.autoSubmitHandler]            Automatic submit handler
+   * @param {Validator}         [settings.warningsValidator]            Warningss validator for fields
    * @param {Function}          [cb]                                    CallBack function
    */
-  initForm: function (settings, cb) {
-    var ctx = this;
+  initForm: callbackify(async function (settings) {
+    this._initState(settings);
 
-    ctx._initState(settings);
+    if (!this.state._formMixin.data) {
+      let data;
+      let err;
+      try {
+        data = await toPromise(settings.model::settings.model.getData)(settings.fields);
+      } catch (e) {
+        err = e;
+      }
 
-    function done() {
-      ctx.state._formMixin.model.on('update', ctx._handleModelChange);
-      ctx.setState(ctx.state, function () {
-        ctx._validateForm(function () {
-          if (cb) {
-            // Don't send validation errors
-            cb();
-          }
-        });
-      });
+      if (this._isUnmounted) {
+        return;
+      }
+
+      if (err) {
+        this.state._formMixin.globalError = err;
+        await toPromise(this::this.setState, true)(this.state);
+        throw err;
+      }
+
+      this.state._formMixin.data = data;
     }
 
-    if (!ctx.state._formMixin.data) {
-      settings.model.getData(settings.fields, function (err, data) {
-        if (ctx._isUnmounted) {
-          return;
-        }
-        if (err) {
-          ctx.state._formMixin.globalError = err;
-          ctx.setState(ctx.state, function () {
-            if (cb) {
-              return cb(err);
-            }
-            throw err;
-          });
-          return;
-        }
-        ctx.state._formMixin.data = data;
-        done();
-      });
-    } else {
-      done();
-    }
-  },
+    this.state._formMixin.model.on('update', this._handleModelChange);
+    await toPromise(this::this.setState, true)(this.state);
+    await toPromise(this.validateForm, true)();
+  }, true),
 
   /**
    * Check is data loaded
@@ -111,8 +105,8 @@ var FormMixin = {
    * @return {{}}
    */
   getChanges: function () {
-    var changes = {};
-    for (var field in this.state._formMixin.changes) {
+    const changes = {};
+    for (const field in this.state._formMixin.changes) {
       if (!this._isDependentField(field)) {
         changes[field] = this.state._formMixin.changes[field];
       }
@@ -131,7 +125,7 @@ var FormMixin = {
       return false;
     }
 
-    var state = this.state._formMixin;
+    const state = this.state._formMixin;
 
     if (field === undefined) {
       return !utils.isEmpty(state.changes);
@@ -147,7 +141,7 @@ var FormMixin = {
   /**
    * Check if form field has validity errors
    *
-   * @param  {string}   field  Field name
+   * @param  {string|string[]}   field  Field name or array of names
    * @return {boolean}
    */
   hasError: function (field) {
@@ -155,7 +149,17 @@ var FormMixin = {
       return false;
     }
 
-    var state = this.state._formMixin;
+    const state = this.state._formMixin;
+
+    // Check group of fields
+    if (Array.isArray(field)) {
+      for (const entry of field) {
+        if (this.hasError(entry)) {
+          return true;
+        }
+      }
+      return false;
+    }
 
     // If partial check is on and field is changed,
     // do not display an error
@@ -165,7 +169,7 @@ var FormMixin = {
       }
     }
 
-    return this.state._formMixin.errors.hasError(field);
+    return this.state._formMixin.errors.hasError(field) || this.state._formMixin.warnings.hasError(field);
   },
 
   clearError: function (field, cb) {
@@ -180,9 +184,11 @@ var FormMixin = {
     if (Array.isArray(field)) {
       field.forEach(function (oneField) {
         this.state._formMixin.errors.clearField(oneField);
+        this.state._formMixin.warnings.clearField(oneField);
       }, this);
     } else {
       this.state._formMixin.errors.clearField(field);
+      this.state._formMixin.warnings.clearField(field);
     }
 
     this.setState(this.state, typeof cb === 'function' ? cb : null);
@@ -222,8 +228,8 @@ var FormMixin = {
       return new ValidationErrors();
     }
 
-    var errors;
-    var field;
+    let field;
+    let errors = ValidationErrors.merge(this.state._formMixin.errors, this.state._formMixin.warnings);
 
     // If gradual validation is on, we need
     // to remove unchanged records from errors object
@@ -237,8 +243,6 @@ var FormMixin = {
           errors.clearField(field);
         }
       }
-    } else {
-      errors = this.state._formMixin.errors;
     }
 
     return errors;
@@ -255,7 +259,10 @@ var FormMixin = {
       return null;
     }
 
-    return this.state._formMixin.errors.getFieldErrors(field);
+    const errors = this.state._formMixin.errors.getFieldErrors(field) || [];
+    const warnings = this.state._formMixin.warnings.getFieldErrors(field) || [];
+
+    return errors.concat(warnings);
   },
 
   /**
@@ -278,7 +285,7 @@ var FormMixin = {
    * @param {*}                values   Event or data
    * @param {Function}         [cb]       CallBack
    */
-  updateField: function (fields, values, cb) {
+  updateField: function (fields, values) {
     if (this._isNotInitialized()) {
       return;
     }
@@ -292,7 +299,7 @@ var FormMixin = {
 
     this.set(utils.zipObject(fields, values));
     if (this.state._formMixin.autoSubmit) {
-      this.submit(this.state._formMixin.autoSubmitHandler, cb);
+      this.submit(this.state._formMixin.autoSubmitHandler);
     }
   },
 
@@ -308,6 +315,10 @@ var FormMixin = {
     this._validateForm(function (err) {
       if (typeof cb === 'function') {
         return cb(err);
+      } else if (err) {
+        if (!(err instanceof ValidationErrors)) {
+          console.error(err);
+        }
       }
     });
   },
@@ -329,7 +340,7 @@ var FormMixin = {
       validate = false;
     }
 
-    var state = this.state._formMixin;
+    const state = this.state._formMixin;
     state.changes = utils.getRecordChanges(state.model, state.data, state.changes, data);
 
     if (validate) {
@@ -354,7 +365,7 @@ var FormMixin = {
    *
    * @param {Function}  [cb]  CallBack function
    */
-  submit: function (cb) {
+  submit: callbackify(async function () {
     if (this._isNotInitialized()) {
       return;
     }
@@ -365,7 +376,7 @@ var FormMixin = {
 
     this.state._formMixin.submitting = true;
 
-    var changes = this._getChanges();
+    const changes = this._getChanges();
 
     this.state._formMixin.globalError = null;
     this.state._formMixin.partialErrorChecking = false;
@@ -373,48 +384,55 @@ var FormMixin = {
     this.setState(this.state);
 
     // Send changes to model
-    this.state._formMixin.model.submit(changes, function (err, data) {
-      if (this._isUnmounted) {
-        return;
-      }
+    let data;
+    let err;
+    try {
+      data = await toPromise(this.state._formMixin.model::this.state._formMixin.model.submit)(changes);
+    } catch (e) {
+      err = e;
+    }
 
-      this.state._formMixin.submitting = false;
+    if (this._isUnmounted) {
+      return;
+    }
 
-      var newChanges = this._getChanges();
-      var actualChanges = utils.isEqual(changes, newChanges);
-      var validationError = err instanceof ValidationErrors;
+    this.state._formMixin.submitting = false;
 
-      // Replacing empty error to null
-      if (validationError && err.isEmpty()) {
-        err = null;
-      }
+    const newChanges = this._getChanges();
+    const actualChanges = utils.isEqual(changes, newChanges);
+    const validationError = err instanceof ValidationErrors;
 
-      if (err) {
-        if (validationError) {
-          if (actualChanges) {
-            this.state._formMixin.errors = err;
-          }
-        } else {
-          this.state._formMixin.globalError = err;
+    // Replacing empty error to null
+    if (validationError && err.isEmpty()) {
+      err = null;
+    }
+
+    if (err) {
+      if (validationError) {
+        if (actualChanges) {
+          this.state._formMixin.errors = err;
         }
-      } else if (actualChanges) {
-        this.state._formMixin.errors = new ValidationErrors();
-        this.state._formMixin.changes = {};
       } else {
-        utils.forEach(changes, function (value, field) {
-          if (utils.isEqual(value, newChanges[field])) {
-            delete this.state._formMixin.changes[field];
-          }
-        }, this);
+        this.state._formMixin.globalError = err;
       }
-
-      this.setState(this.state, function () {
-        if (typeof cb === 'function') {
-          cb(err, data);
+    } else if (actualChanges) {
+      this.state._formMixin.errors = new ValidationErrors();
+      this.state._formMixin.changes = {};
+    } else {
+      utils.forEach(changes, function (value, field) {
+        if (utils.isEqual(value, newChanges[field])) {
+          delete this.state._formMixin.changes[field];
         }
-      });
-    }.bind(this));
-  },
+      }, this);
+    }
+
+    await toPromise(this::this.setState, true)(this.state);
+
+    if (err) {
+      throw err;
+    }
+    return data;
+  }, true),
 
   clearFieldChanges: function (field, cb) {
     if (this._isNotInitialized()) {
@@ -422,6 +440,7 @@ var FormMixin = {
     }
 
     this.state._formMixin.errors.clearField(field);
+    this.state._formMixin.warnings.clearField(field);
     delete this.state._formMixin.changes[field];
     this.setState(this.state, typeof cb === 'function' ? cb : null);
   },
@@ -432,6 +451,7 @@ var FormMixin = {
     }
 
     this.state._formMixin.errors.clear();
+    this.state._formMixin.warnings.clear();
     this.state._formMixin.changes = {};
     this.state._formMixin.globalError = false;
     this.state._formMixin.partialErrorChecking = this.state._formMixin.partialErrorCheckingDefault;
@@ -458,7 +478,7 @@ var FormMixin = {
    * @private
    */
   _handleModelChange: function (changes) {
-    utils.assign(this.state._formMixin.data, utils.cloneDeep(changes));
+    Object.assign(this.state._formMixin.data, utils.cloneDeep(changes));
     if (!this._isUnmounted) {
       this.setState(this.state);
     }
@@ -473,11 +493,13 @@ var FormMixin = {
       data: settings.data,
       changes: settings.changes || {},
       errors: new ValidationErrors(),
+      warnings: new ValidationErrors(),
       globalError: null,
       validating: false,
       pendingClearErrors: [],
       submitting: false,
       showDependentFields: settings.showDependentFields || false,
+      warningsValidator: settings.warningsValidator || new Validator(),
 
       partialErrorChecking: settings.partialErrorChecking, // Current mode
       partialErrorCheckingDefault: settings.partialErrorChecking, // Default mode
@@ -499,43 +521,75 @@ var FormMixin = {
       return stop();
     }
 
-    var data = this._getChanges();
+    let completed = 0;
+    let completeError;
+    const onComplete = function (err) {
+      let field;
 
-    this.state._formMixin.validating = true;
-
-    this.state._formMixin.model.isValidRecord(data, function (err, validErrors) {
-      var field;
-
-      this.state._formMixin.validating = false;
-
-      if (this._isUnmounted || !utils.isEqual(data, this._getChanges())) {
-        return stop();
+      if (this._isUnmounted) {
+        if (err) {
+          console.error(err);
+        }
+        return;
       }
 
       if (err) {
-        this.state._formMixin.errors.clear();
-      } else {
-        this.state._formMixin.errors = validErrors;
-        while (field = this.state._formMixin.pendingClearErrors.pop()) {
-          this.state._formMixin.errors.clearField(field);
-        }
+        completeError = err;
+      }
+
+      if (++completed < 2) {// Wait two callbacks
+        return;
+      }
+
+      this.state._formMixin.validating = false;
+
+      while (field = this.state._formMixin.pendingClearErrors.pop()) {
+        this.state._formMixin.warnings.clearField(field);
+        this.state._formMixin.errors.clearField(field);
       }
 
       this.setState(this.state, function () {
-        const errorsWithPartialChecking = this.getValidationErrors();
-        if (!err && !errorsWithPartialChecking.isEmpty()) {
-          return cb(errorsWithPartialChecking);
+        if (completeError) {
+          cb(completeError);
+          return;
         }
+
+        const errorsWithPartialChecking = this.getValidationErrors();
+        cb(errorsWithPartialChecking.isEmpty() ? null : errorsWithPartialChecking);
+      });
+    }.bind(this);
+
+    this.state._formMixin.validating = true;
+
+    this._runValidator(this.state._formMixin.model, this._getChanges, 'errors', onComplete);
+    this._runValidator(this.state._formMixin.warningsValidator, this._getData, 'warnings', onComplete);
+  },
+
+  _runValidator: function (validator, getData, output, cb) {
+    const data = getData();
+    validator.isValidRecord(data)
+      .then(validErrors => {
+        if (this._isUnmounted || !utils.isEqual(data, getData())) {
+          return;
+        }
+        this.state._formMixin[output] = validErrors;
+        cb();
+      })
+      .catch(err => {
+        if (this._isUnmounted || !utils.isEqual(data, getData())) {
+          console.error(err);
+          return;
+        }
+        this.state._formMixin[output].clear();
         cb(err);
       });
-    }.bind(this));
   },
 
   _getData: function () {
     if (!this.state._formMixin.data) {
       return null;
     }
-    return utils.assign({}, this.state._formMixin.data, this.state._formMixin.changes);
+    return Object.assign({}, this.state._formMixin.data, this.state._formMixin.changes);
   },
 
   _getChanges: function () {
@@ -547,9 +601,9 @@ var FormMixin = {
   },
 
   _isDependentField: function (field) {
-    var state = this.state._formMixin;
+    const state = this.state._formMixin;
     return state.changes.hasOwnProperty(field) && utils.isEqual(state.changes[field], state.data[field]);
   }
 };
 
-module.exports = FormMixin;
+export default FormMixin;

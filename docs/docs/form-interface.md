@@ -1,7 +1,7 @@
 ---
 title: Model interface
 id: form-interface
-prev: form-mixin.html
+prev: form-service.html
 next: form-model.html
 ---
 
@@ -16,6 +16,13 @@ Model for handling form requests.
 {% endhighlight %}
 
 Returns all requested fields.
+
+### Example
+{% highlight javascript %}
+form.getData(['search'], function (err, data) {
+    console.log(data);//{ search: "query" }
+});
+{% endhighlight %}
 
 ----
 

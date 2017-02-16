@@ -1,25 +1,23 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
 if (typeof window !== 'undefined' && typeof window.setImmediate !== 'function') {
-  window.setImmediate = (function () {
-    var head = {};
-    var tail = head;
-    var ID = Math.random();
+  window.setImmediate = ((() => {
+    let head = {};
+    let tail = head;
+    const ID = Math.random();
 
     function onMessage(e) {
       if (e.data !== ID) {
         return;
       }
       head = head.next;
-      var func = head.func;
+      const func = head.func;
       delete head.func;
       func();
     }
@@ -29,11 +27,11 @@ if (typeof window !== 'undefined' && typeof window.setImmediate !== 'function') 
     } else {
       window.attachEvent('onmessage', onMessage);
     }
-    return window.postMessage ? function (func) {
+    return window.postMessage ? func => {
       tail = tail.next = {func: func};
       window.postMessage(ID, '*');
-    } : function (func) {
+    } : func => {
       setTimeout(func, 0);
     };
-  }());
+  })());
 }

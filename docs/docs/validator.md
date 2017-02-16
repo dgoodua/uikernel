@@ -34,7 +34,7 @@ Add synchronous field validation.
 Validator fields(string[] fields, function validatorFunction(Object record, ValidationErrors errors))
 {% endhighlight %}
 
-Specify multiple synchronous validators for a group of fields. If any errors occur, the function returns an error.
+Specify multiple synchronous validators for a group of fields.  If any errors occur, the function use `.add(field, errorText)` on `ValidationErrors` object.
 
 ---
 
@@ -65,7 +65,7 @@ Validator asyncFields(string[] fields, function validator)
 {% endhighlight %}
 
 Add an asynchronous validator to fields. The callback has three parameters: a record object, the `ValidationErrors` object,
-and a callback. If any errors occur during the asynchronous function execution, the callback will return the `Error` object.
+and a callback. If any errors occur during the asynchronous function execution, the function use `.add(field, errorText)` on `ValidationErrors` object.
 
 ---
 
@@ -74,8 +74,11 @@ and a callback. If any errors occur during the asynchronous function execution, 
 A set of basic validation rules is provided:
 
 {% highlight javascript %}
-// Check if value is not empty
+// Check if value is not empty string, null and undefined
 UIKernel.Validators.notNull(string errorMessage)
+
+// Check if value is not empty string, array and object. Not null, undefined, 0
+UIKernel.Validators.notEmpty(string errorMessage)
 
 // Check if value is boolean
 UIKernel.Validators.boolean(string errorMessage)
@@ -183,13 +186,13 @@ Check record validity
 
 ## Example
 {% highlight javascript %}
-validator.isValidRecord(record, function (errors) {
+validator.isValidRecord(record, function (err, errors) {
   if (errors.isEmpty()) {
     throw errors;
   }
 
   // if there are no errors, do something
-}
+})
 {% endhighlight %}
 
 

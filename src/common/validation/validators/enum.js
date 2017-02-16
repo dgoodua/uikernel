@@ -1,18 +1,14 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
-'use strict';
+import utils from '../../utils';
 
-var utils = require('../../utils');
-
-function validator(notNull, variants, error, value) {
+function baseValidator(notNull, variants, error, value) {
   error = error || 'Not in variants';
   if (!utils.isDefined(value)) {
     if (notNull) {
@@ -33,10 +29,7 @@ function validator(notNull, variants, error, value) {
  * @param {string} error Error message
  * @returns {Function}
  */
-module.exports = function (variants, error) {
-  return validator.bind(null, false, variants, error);
-};
+const validator = (variants, error) => baseValidator.bind(null, false, variants, error);
+validator.notNull = (variants, error) => baseValidator.bind(null, true, variants, error);
 
-module.exports.notNull = function (variants, error) {
-  return validator.bind(null, true, variants, error);
-};
+export default validator;

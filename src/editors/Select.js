@@ -1,20 +1,17 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
-'use strict';
+import toPromise from '../common/toPromise';
+import React from 'react';
+import utils from '../common/utils';
 
-var utils = require('../common/utils');
-var React = require('react');
-
-var SelectEditor = React.createClass({
-  propTypes: {
+class SelectEditor extends React.Component {
+  static propTypes = {
     options: React.PropTypes.array,
     model: React.PropTypes.shape({
       read: React.PropTypes.func
@@ -23,73 +20,71 @@ var SelectEditor = React.createClass({
     onChange: React.PropTypes.func.isRequired,
     onLabelChange: React.PropTypes.func,
     value: React.PropTypes.any
-  },
-  getDefaultProps: function () {
-    return {
-      options: []
+  };
+  static defaultProps = {
+    options: []
+  };
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      options: props.options,
+      loading: Boolean(props.model)
     };
-  },
-  getInitialState: function () {
-    return {
-      options: this.props.options,
-      loading: Boolean(this.props.model)
-    };
-  },
-  componentDidMount: function () {
+  }
+  componentDidMount() {
     if (this.props.model) {
-      this.props.model.read('', function (err, data) {
-        if (err) {
+      toPromise(this.props.model.read.bind(this.props.model))('')
+        .then(data => {
+          data.unshift([null, '']);
+
+          this.setState({
+            options: data,
+            loading: false
+          });
+        })
+        .catch(err => {
           throw err;
-        }
-
-        data.unshift([null, '']);
-
-        this.setState({
-          options: data,
-          loading: false
         });
-      }.bind(this));
     }
-  },
+  }
 
-  getOptions: function () {
+  getOptions() {
     return this.props.model ? this.state.options : this.props.options;
-  },
+  }
 
-  handleChange: function (e) {
-    var option = this.getOptions()[e.target.value];
-    if (!(option instanceof Array)){
+  handleChange(e) {
+    let option = this.getOptions()[e.target.value];
+    if (!(option instanceof Array)) {
       option = [option, option];
     }
     this.props.onChange(option[0]);
     if (this.props.onLabelChange) {
       this.props.onLabelChange(option[1]);
     }
-  },
+  }
 
-  render: function () {
-    var options = this.getOptions();
-    var valueIndex = utils.findIndex(options, function (option) {
+  render() {
+    const options = this.getOptions();
+    const valueIndex = utils.findIndex(options, option => {
       return utils.isEqual(option instanceof Array ? option[0] : option, this.props.value);
-    }.bind(this));
+    });
 
     return (
       <select
         {...utils.omit(this.props, 'value')}
         value={valueIndex}
-        onChange={this.handleChange}
+        onChange={this::this.handleChange}
         disabled={this.props.disabled || this.state.loading}
       >
-      {options.map(function (item, index) {
-        return (
+        {options.map((item, index) => (
           <option key={index} value={index}>
             {item instanceof Array ? item[1] : item}
           </option>
-        );
-      }, this)}
+        ), this)}
       </select>
     );
   }
-});
+}
 
-module.exports = SelectEditor;
+export default SelectEditor;

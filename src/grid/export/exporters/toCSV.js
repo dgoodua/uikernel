@@ -1,30 +1,25 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
-'use strict';
+import toPromise from '../../../common/toPromise';
+import callbackify from '../../../common/callbackify';
+import csv from 'csv-stringify';
 
-var suspend = require('suspend');
-var csv = require('csv-stringify');
+const toCSV = callbackify(async function (data) {
+  const csvData = await toPromise(csv, true)(data.records.concat([data.totals]), {
+    header: true,
+    columns: data.columns
+  });
 
-var toCSV = suspend.callback(function * (data) {
   return {
     mime: 'text/csv',
-    data: yield csv(
-      data.records.concat([data.totals]),
-      {
-        header: true,
-        columns: data.columns
-      },
-      suspend.resume()
-    )
+    data: csvData
   };
 });
 
-module.exports = toCSV;
+export default toCSV;

@@ -1,26 +1,21 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
-'use strict';
-
 require('./lib/common/setImmediate');
-require('regenerator-runtime/runtime');
-var variables = require('./lib/common/variables');
+const variables = require('./lib/common/variables');
 
-var Module = {
+const Module = {
   applyGridFilters: require('./lib/grid/models/applyGridFilters'),
   Grid: require('./lib/grid/Component'),
-  createValidator: require('./lib/common/validation/Validator/browser'),
+  Form: require('./lib/form/FormService'),
+  createValidator: require('./lib/common/validation/Validator/browser').create,
   exportGridData: require('./lib/grid/export/exportGridData'),
   toJSON: require('./lib/grid/export/exporters/toJSON'),
-  toCSV: require('./lib/grid/export/exporters/toCSV'),
   Models: {
     Grid: {
       Xhr: require('./lib/grid/models/GridXhrModel'),
@@ -41,8 +36,8 @@ var Module = {
   },
   Adapters: {
     Grid: {
-      toFormUpdate: require('./lib/form/adapters/GridToFormUpdate'),
-      toFormCreate: require('./lib/form/adapters/GridToFormCreate')
+      ToFormUpdate: require('./lib/form/adapters/GridToFormUpdate'),
+      ToFormCreate: require('./lib/form/adapters/GridToFormCreate')
     }
   },
   Editors: {
@@ -53,9 +48,7 @@ var Module = {
     Number: require('./lib/editors/Number')
   },
   ArgumentsError: require('./lib/common/ArgumentsError'),
-  Mixins: {
-    Form: require('./lib/form/mixin')
-  },
+  ThrottleError: require('./lib/common/ThrottleError'),
   Validators: {
     boolean: require('./lib/common/validation/validators/boolean'),
     date: require('./lib/common/validation/validators/date'),
@@ -64,10 +57,14 @@ var Module = {
     float: require('./lib/common/validation/validators/float'),
     regExp: require('./lib/common/validation/validators/regExp'),
     notNull: require('./lib/common/validation/validators/notNull'),
-    number: require('./lib/common/validation/validators/number')
+    number: require('./lib/common/validation/validators/number'),
+    notEmpty: require('./lib/common/validation/validators/notEmpty')
+  },
+  Mixins: {
+    Form: require('./lib/form/mixin')
   },
   _get: variables.get,
   _set: variables.set
 };
 
-global.UIKernel = module.exports = Module;
+module.exports = Module;

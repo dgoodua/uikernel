@@ -1,30 +1,18 @@
 /**
- * Copyright (с) 2015, SoftIndex LLC.
+ * Copyright (с) 2015-present, SoftIndex LLC.
  * All rights reserved.
  *
  * This source code is licensed under the BSD-style license found in the
  * LICENSE file in the root directory of this source tree.
- *
- * @providesModule UIKernel
  */
 
-'use strict';
-
-var findDOMNode = require('react-dom').findDOMNode;
-var utils = require('../../common/utils');
+import utils from '../../common/utils';
+import {findDOMNode} from 'react-dom';
 
 /**
  * Grid mixin, responsible for row statuses processing
  */
-var GridStatusesMixin = {
-  getInitialState: function () {
-    return {
-      statusMap: {
-        new: 1 << 0
-      },
-      statuses: {}
-    };
-  },
+const GridStatusesMixin = {
 
   /**
    * Add record status
@@ -33,7 +21,7 @@ var GridStatusesMixin = {
    * @param {string}           status      Record status
    */
   addRecordStatus: function (recordId, status) {
-    var row = utils.hash(recordId);
+    const row = utils.toEncodedString(recordId);
 
     // If list does not contain the record, mark its status as empty
     if (!this.state.statuses.hasOwnProperty(row)) {
@@ -55,12 +43,12 @@ var GridStatusesMixin = {
    * @param {string}     status  Status
    */
   addRecordStatusGroup: function (group, status) {
-    var i;
-    var bit = this._getStatusBit(status);
-    var row;
+    let i;
+    const bit = this._getStatusBit(status);
+    let row;
 
     for (i in group) {
-      row = utils.hash(group[i]);
+      row = utils.toEncodedString(group[i]);
       if (!this.state.statuses.hasOwnProperty(row)) {
         this.state.statuses[row] = {
           id: group[i],
@@ -81,29 +69,29 @@ var GridStatusesMixin = {
    * @param {string}  status      Record status
    */
   removeRecordStatus: function (recordId, status) {
-    var bit = this._getStatusBit(status);
-    var row = utils.hash(recordId);
+    const bit = this._getStatusBit(status);
+    const rowId = utils.toEncodedString(recordId);
 
     // Cancel method execution if record has no statuses
-    if (!this.state.statuses[row]) {
+    if (!this.state.statuses[rowId]) {
       return;
     }
 
     // Remove status if record has it
-    if (this.state.statuses[row].sum & bit) {
-      this.state.statuses[row].sum ^= bit;
-      if (!this.state.statuses[row].sum) {
+    if (this.state.statuses[rowId].sum & bit) {
+      this.state.statuses[rowId].sum ^= bit;
+      if (!this.state.statuses[rowId].sum) {
         // Remove table record if it's extra
-        if (!this._isMainRow(row)) {
-          this._removeRecord(row);
+        if (!this._isMainRow(rowId)) {
+          this._removeRecord(rowId);
         }
-        delete this.state.statuses[row];
+        delete this.state.statuses[rowId];
       }
     }
 
     // Remove element's class
     $(findDOMNode(this.refs.body))
-      .find('tr[key=' + row + ']')
+      .find(`tr[key="${rowId}"]`)
       .removeClass(status);
   },
 
@@ -115,7 +103,7 @@ var GridStatusesMixin = {
    * @returns {boolean} Record has status flag
    */
   hasRecordStatus: function (recordId, status) {
-    var row = utils.hash(recordId);
+    const row = utils.toEncodedString(recordId);
     if (this.state.statuses[row]) {
       return (this.state.statuses[row].sum & this._getStatusBit(status)) > 0;
     }
@@ -129,9 +117,9 @@ var GridStatusesMixin = {
    * @returns {Array} Record IDs array
    */
   getAllWithStatus: function (status) {
-    var i;
-    var records = [];
-    var bit = this._getStatusBit(status);
+    let i;
+    const records = [];
+    const bit = this._getStatusBit(status);
 
     for (i in this.state.statuses) {
       if (this.state.statuses[i].sum & bit) {
@@ -147,8 +135,8 @@ var GridStatusesMixin = {
    * @param {string}      status  Status
    */
   removeRecordStatusAll: function (status) {
-    var i;
-    var bit = this._getStatusBit(status);
+    let i;
+    const bit = this._getStatusBit(status);
 
     for (i in this.state.statuses) {
       if (this.state.statuses[i].sum & bit) {
@@ -162,7 +150,7 @@ var GridStatusesMixin = {
       }
     }
     $(findDOMNode(this.refs.body))
-      .find('.dgrid-body tr.' + status)
+      .find(`.dgrid-body tr.${status}`)
       .removeClass(status);
   },
 
@@ -174,15 +162,14 @@ var GridStatusesMixin = {
    * @private
    */
   _getRowStatusNames: function (row) {
-    var i;
-    var names = [];
-    var statuses = this.state.statuses[row] && this.state.statuses[row].sum;
+    const names = [];
+    const statuses = this.state.statuses[row] && this.state.statuses[row].sum;
 
     if (!statuses) {
       return [];
     }
 
-    for (i in this.state.statusMap) {
+    for (const i in this.state.statusMap) {
       if (statuses & this.state.statusMap[i]) {
         names.push(i);
       }
@@ -199,8 +186,8 @@ var GridStatusesMixin = {
    * @private
    */
   _getStatusBit: function (statusName) {
-    var status;
-    var offset;
+    let status;
+    let offset;
 
     if (this.state.statusMap.hasOwnProperty(statusName)) {
       status = this.state.statusMap[statusName];
@@ -223,8 +210,8 @@ var GridStatusesMixin = {
    * @private
    */
   _getRecordsWithStatus: function () {
-    var ids = [];
-    var i;
+    const ids = [];
+    let i;
 
     for (i in this.state.statuses) {
       ids.push(this.state.statuses[i].id);
@@ -233,4 +220,4 @@ var GridStatusesMixin = {
   }
 };
 
-module.exports = GridStatusesMixin;
+export default GridStatusesMixin;
